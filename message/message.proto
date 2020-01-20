@@ -1,0 +1,368 @@
+syntax = "proto3";
+
+package msg;
+
+message Input{
+    map<int64,EntityState> EntityStates = 1;
+    repeated Interaction Interaction = 2;
+    map<int64,Character> NewEntityCharacters = 3;
+    repeated int64 DestroyEntity = 4;
+    int64 TimeStamp = 6;
+}
+
+message Interaction{
+    int64 FromEntityId = 6;
+    int64 ToEntityId = 1;
+    string Type = 2;
+    Vector3 Direction = 3;
+    Vector3 ApplyPoint = 4;
+    bool IsRebouncable = 5;
+}
+
+message EntityState {
+    int64 Uuid =1;
+    Transform Transform = 2;
+    Vector3 Speed = 3;
+    Animation Animation = 8;
+    string PrefabName = 5;
+    float Health = 6;
+}
+
+message GameFrame {
+    map<int64,EntityState> EntityStates = 1;
+    repeated Interaction Interaction = 2;
+    map<int64,Character> Characters = 3;
+    repeated int64 DestroyEntity = 6;
+    int64 TimeStamp = 4;
+    int64 RunnigNo = 5;
+}
+
+message Animation{
+    string Name = 1;
+    float Value = 2;
+}
+
+message Transform {
+    Vector3 Position= 1;
+    Quaternion Rotation = 2;
+}
+
+message SessionCache {
+    ServerInfo GameServerInfo = 1;
+    SessionInfo SessionInfo = 2;
+     
+}
+
+message Vector3{
+    float X = 1;
+    float Y = 2;
+    float Z = 3;
+}
+
+message Quaternion{
+    float X = 1;
+    float Y= 2;
+    float Z = 3;
+    float W = 4;
+}
+
+message  Position{
+    map<int64,Transform> PosMap = 1;
+    int64 TimeStamp = 2;
+}
+
+message Error{
+    string ErrType = 1;
+    string ErrMsg = 2;
+    string RunnigNo = 3;
+    int64 FromId = 4;
+}
+
+message TimeStamp {
+    int64 Value = 1;
+}
+
+service ClientToGame{
+    rpc PlayerInput(stream Input) returns (Empty){}
+    rpc UpdateGameFrame(Empty) returns (stream GameFrame) {}
+    rpc Pipe(stream LogMessage) returns (stream MessageToUser) {}
+    rpc TimeCalibrate(Empty) returns (TimeStamp) {}
+}
+
+service AgentToGame{
+    rpc AquireGameRoom(GameCreation) returns (PemKey) {}
+    rpc DeletGameRoom(RoomInfo) returns (Success){}
+}
+
+service ClientToAgent{
+    rpc AquireSessionKey(Empty) returns (SessionKey) {}
+    rpc AquireOtherAgent(Empty) returns (ServerInfo) {}
+    rpc GetSessionCache(Empty) returns (SessionCache) {}
+    rpc Login(LoginInput) returns(UserInfo){}
+    rpc CreateAccount(RegistInput) returns(Error){}
+    rpc SetAccount(AttrSetting) returns (Success) {}
+    rpc SetCharacter(CharacterSetting) returns (Success) {}
+    rpc AquireGameServer(Empty) returns (ServerInfo){}
+    rpc CreateRoom(RoomSetting) returns (Success){}
+    rpc JoinRoom(ID) returns (Success){}
+    rpc RoomReady(Empty) returns (Success) {}
+
+    rpc UpdateRoomContent(Empty) returns (stream RoomContent) {}
+    rpc UpdateHome(Empty) returns (stream HomeView) {}
+    rpc UpdateRoomList(Empty) returns (stream RoomList) {}
+    rpc UpdateUserList(Empty) returns (stream UserList) {}
+    rpc Pipe(stream LogMessage) returns (stream MessageToUser) {}
+}
+
+message ID {
+    int64 Value = 1;
+}
+
+message MessageToUser {
+    enum Type {
+        ToView = 0;
+        ToDebugLog = 2;
+    }
+    Type MsgType = 1;
+    string Context = 2;
+}
+
+message LogMessage {
+    enum Level {
+        Debug = 0;
+        Info = 1;
+        Warn = 2;
+        Fatal = 3;
+    }
+    Level LogLevel = 1;
+    string Context = 2;
+}
+
+message FriendRequest{
+    int64 UserId = 1;
+    string UserName = 2;
+}
+
+message SearchKeyWord {
+    string Value = 1;
+}
+
+message SearchResult {
+    repeated UserInfo List = 1;
+}
+
+message UserList {
+    repeated UserInfo userInfos = 1;
+}
+
+message GameCreation {
+    RoomInfo RoomInfo = 1;
+    repeated SessionInfo PlayerSessions = 2;
+    int64 MasterSessionId = 3;
+}
+
+message PemKey{
+    string TLS = 1;
+    string SSL = 2;
+}
+
+message Empty{}
+
+message RoomPrepareView{
+
+}
+
+message EntityInfo{
+    int64 Uuid = 1;
+    int32 TeamNo = 4;
+    Transform Transform = 2;
+    int64 CharacterId = 3;
+    Skill ActiveSkill = 5;
+    string Motion = 6;
+}
+
+message Skill {
+    bool  Active = 1;
+    string Name = 2;
+    float Value = 3; 
+}
+
+message HomeView {
+
+}
+
+message RoomSetting {
+    int32 MaxPlayer = 1;
+    string GameType = 2;
+    string Name = 3;
+}
+
+message RoomList {
+    repeated RoomReview item = 1;
+}
+
+message RoomInfo{
+    int64 Uuid = 1;
+    string Name = 2;
+    string GameType = 3;
+    int64 OwnerUuid = 4;
+    map<int64, UserInfo> UserInRoom = 5;
+    map<int64,bool> ReadyUser = 6;
+    enum RoomStatus {
+        Preparing = 0;
+        OnPlaying = 1;
+        Ending = 2;
+    }
+    RoomStatus Status = 7;
+    int64 LeftMilliSecond = 8;
+}
+
+message RoomReview {
+    int64 Uuid = 1;
+    string Name = 2;
+    string GameType = 3;
+    int32 MaxPlayer = 4;
+    int32 InRoomPlayer = 5;
+}
+
+message RoomContent {
+    int64 Uuid = 1;
+    map<string,PlayerInfo> Players = 2;
+}
+
+message PlayerInfo {
+    int64 CharacterCode = 1;
+    int32 TeamNo = 2;
+    Character Character = 4;
+    int64 UserId = 5;
+    string UserName = 6;
+    bool IsReady = 7;
+}
+
+message Character {
+    int64 Uuid = 1;
+    string CharacterType = 2;
+    string Name = 3;
+    Color Color =4;
+    int32 Level = 5;
+    int32 Exp = 6;
+    float MaxHealth = 10;
+    Ability Ability = 7;
+    repeated Equipment Equipments = 8;
+    map<string,float> Attr  = 9;
+}
+
+message SessionInfo{
+    enum SessionState {
+        NoSession = 0;
+        Guest = 1;
+        UserIdle = 2;
+        UserInRoom = 3;
+        ConnectingGame = 4;
+        AgentServerWaitReconnect = 5;
+        OnStart = 6;
+        Playing = 7;
+        GameOver = 8;
+        GameServerWaitReconnect = 9;
+    }
+    enum SessionCapacity {
+        GM = 0;
+        RoomMaster = 1;
+        RoomClient = 2;
+        None = 3;
+    }
+    SessionState State = 1;
+    SessionCapacity Capacity = 2;
+    int64 Uuid = 5;
+    SessionKey Key = 3;
+    UserInfo UserInfo = 4;
+}
+
+message Success {
+    bool ok = 1;
+}
+
+message AttrSetting {
+    string Method = 1;
+    string Key = 2;
+    string Value = 3;
+}
+
+message SessionKey {
+    string Value = 1;
+}
+
+message ServerInfo {
+    enum Type {
+        GameServer = 0;
+        AgentServer = 1;
+    }
+    Type ServerType = 1;
+    string PublicKey = 2;
+    string Port = 3;
+    string Addr = 4;
+    SessionKey SessionKey = 5;
+    int64 MaxConn = 6;
+    int64 NowConn = 7;
+    string GameTerrianName = 8;
+}
+
+message LoginInput {
+    string UserName = 1;
+    string Pswd = 2;
+}
+
+message RegistInput {
+    string UserName = 1;
+    string Pswd = 2;
+    string Email = 3;
+}
+
+message UserInfo{
+    string UserName = 1;
+    int64 Uuid = 2;
+    map<int64, Character> OwnCharacter = 3;
+    int64 UsedCharacter = 4;
+}
+
+message UserState{
+    enum UserStatus {
+        OnCreating = 0;
+        Login = 1;
+        Offline = 2;
+        OnPlaying = 3;
+    }
+    UserStatus State = 1;
+}
+
+message CharacterSetting{
+    int64 Uuid = 1;
+    Color Color = 2;
+    repeated Equipment Equipments = 8;
+}
+
+message Color {
+    int32 R = 1;
+    int32 G = 2;
+    int32 B = 3;
+}
+
+message Equipment{
+    string Name = 1;
+    string Type =2 ;
+    int64 Uuid = 3 ;
+    repeated Color Colors = 4;
+    Ability Ability =5;
+    int32 CD =6;
+    int32 Usable =7;
+    int32 Inventory =8;
+}
+
+message Ability{
+    int32 ATK = 1;
+    int32 DEF = 2;
+    float SPD = 3;
+	float TSPD = 6;
+    int32 MP = 4;
+    int32 MAKT = 5;
+}
