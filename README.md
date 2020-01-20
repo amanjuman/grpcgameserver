@@ -1,4 +1,4 @@
-# gRP Game Server
+# gRPC Game Server
 
 ## Tech used
 - golang
